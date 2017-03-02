@@ -1,6 +1,6 @@
 {:: encoding="utf-8" /}
 
-# Logging what happens 
+# Logging what happens
 
 MyApp 1.0 is now working, but handles errors poorly. See what happens when we try to work on a non-existent file/folder:
 
@@ -8,12 +8,12 @@ MyApp 1.0 is now working, but handles errors poorly. See what happens when we tr
 Z:\code\v02\MyApp.exe Z:\texts\Does_not_exist
 ~~~
 
-We see an alert message: _This Dyalog APL runtime application has attempted to use the APL session and will therefore be closed._ 
+We see an alert message: _This Dyalog APL runtime application has attempted to use the APL session and will therefore be closed._
 
-`MyApp` failed, because there is no file or folder `Z:\texts\Does_not_exist`. That triggered an error in the APL code. The interpreter tried to signal the error to the session. But a runtime task has no session, so at that point the interpreter popped the alert message and `MyApp` died.   
+`MyApp` failed, because there is no file or folder `Z:\texts\Does_not_exist`. That triggered an error in the APL code. The interpreter tried to signal the error to the session. But a runtime task has no session, so at that point the interpreter popped the alert message and `MyApp` died.
 
-T> As soon as you close the message box a CONTINUE workspace will be created as a sibling of the EXE. Such a CONTINUE WS can be loaded and investigated, making it easy to figure out what the problem is. However, this is only true as long as there is only a single thread running in the EXE. 
-T> 
+T> As soon as you close the message box a CONTINUE workspace will be created as a sibling of the EXE. Such a CONTINUE WS can be loaded and investigated, making it easy to figure out what the problem is. However, this is only true as long as there is only a single thread running in the EXE.
+T>
 T> Note that for analyzing purposes a CONTINUE workspace must be loaded in an already running instance of Dyalog. In other words: don't double-click a CONTINUE! The reason is that `⎕DM` and `⎕DMX` are overwritten in the process of booting SALT, meaning that you loose the error message. That might be a problem or not: if you can simply re-execute the failing line it will produce the same error again but if it is, say, reading from a previously tied file then that cannot work -- or rather fail with the original error because that file is of course not tied anymore when you load the CONTINUE.
 
 The next version of `MyApp` could do better by...
@@ -38,21 +38,21 @@ Load Constants
 Load Utilities
 Load MyApp
 Run #.MyApp.SetLX ⍬
-~~~ 
+~~~
 
-and run the DYAPP to recreate the `MyApp` workspace. 
+and run the DYAPP to recreate the `MyApp` workspace.
 
 A> ### Getting help with any APLTree members
-A> 
+A>
 A> Note that you can ask for a detailed documentation for how to use the members of the APLTree project by executing:
-A> 
+A>
 A> ~~~
 A> ]ADOC_Browse APLTreeUtils
 A> ~~~
-A> 
+A>
 A> I> If the user command `]ADOC_browse` is not available you should issue the `]uupdate` command. That would bring all Dyalog user commands up to date. `ADOC_Browse`, `ADOC_List` and `ADOC_Help` should then all be available.
 
-The `Logger` class is now part of `MyApp` together with some dependencies: 
+The `Logger` class is now part of `MyApp` together with some dependencies:
 
 * `APLTreeUtils` is a namespace that contains some functions needed by most applications. All members of the APLTree library depend on it.
 * `FilesAndDirs` is a class that offers method for handling files and directories.
@@ -68,7 +68,7 @@ Let's get the program to log what it's doing. Within `MyApp`, some changes. Some
 
 Note that `APLTreeUtils` comes with the functions `Uppercase` and `Lowercase`. We have those already in the `Utilities` namespace. This violates the DRY principle. We should get rid of one version and use the other everywhere. But how to choose?
 
-First of all, almost all APLTree projects rely on `APLTreeUtils`. If you want to use this library then we cannot get rid of `APLTreeUtils`. 
+First of all, almost all APLTree projects rely on `APLTreeUtils`. If you want to use this library then we cannot get rid of `APLTreeUtils`.
 
 The two different versions both use the Dyalog `⌶` function, so comparing functionality and speed won't help.
 
@@ -85,9 +85,9 @@ Therefore we remove the two functions from `Utilities` and change `CountLetters�
 That works because the alias `A` we've just introduced points to `APLTreeUtils`.
 
 
-### Where to keep the logfiles? 
+### Where to keep the logfiles?
 
-Where is `MyApp` to write the logfile? We need a filepath we know exists. That rules out `fullfilepath`. We need a logfile even if that isn't a valid path.  
+Where is `MyApp` to write the logfile? We need a filepath we know exists. That rules out `fullfilepath`. We need a logfile even if that isn't a valid path.
 
 We'll write logfiles into a subfolder of the current directory. Where will that be? When the EXE launches, the current directory is set:
 
@@ -99,7 +99,7 @@ Current directory is `Z:\` and therefore that's where the logfiles will appear.
 
 If this version of `MyApp` were for shipping that would be a problem. An application installed in `C:\Program Files` cannot rely on being able to write logfiles there. That is a problem to be solved by an installer. We'll come to that later. But for this version of `MyApp` the logfiles are for your eyes only. It's fine that the logfiles appear wherever you launch the EXE. You just have to know where they are. We will put them into a sub folder `Logs` within the current directory.
 
-In developing and testing `MyApp`, we create the active workspace by running `MyApp.dyapp`. The interpreter sets the current directory of the active workspace as the DYAPP's parent folder for us. That too is sure to exist. 
+In developing and testing `MyApp`, we create the active workspace by running `MyApp.dyapp`. The interpreter sets the current directory of the active workspace as the DYAPP's parent folder for us. That too is sure to exist.
 
 ~~~
       #.FilesAndDirs.PWD
@@ -110,20 +110,20 @@ Now we set up the parameters needed to instantiate the Logger class. First we us
 
 ~~~
       #.Logger.CreateParms.∆List''
-  active                   1    
-  autoReOpen               1    
-  debug                    0    
-  encoding              ANSI    
-  errorPrefix      *** ERROR    
-  extension              log    
-  fileFlag                 1    
-  filename                      
-  filenamePostfix               
-  filenamePrefix                
-  filenameType          DATE    
-  path                          
-  printToSession           0    
-  timestamp                     
+  active                   1
+  autoReOpen               1
+  debug                    0
+  encoding              ANSI
+  errorPrefix      *** ERROR
+  extension              log
+  fileFlag                 1
+  filename
+  filenamePostfix
+  filenamePrefix
+  filenameType          DATE
+  path
+  printToSession           0
+  timestamp
 ~~~
 
 We then modify those where the defaults don't match our needs and use the parameter space to create the Logger object. For this we create a function `OpenLogFile`:
@@ -148,13 +148,13 @@ Notes:
 * We need to make sure that the current directory contains a `Logs` folder. That's what the method `FilesAndDirs.CheckPath` will ensure when the left argument is the string `'Create!'`.
 
 * We change the default encoding -- that's "ANSI" -- to "UTF-8". Note that this has pros and cons: it allows us to write APL characters to
-  the log file but it will also cause potential problems with any third-party tools dealing with log files, because many of them 
+  the log file but it will also cause potential problems with any third-party tools dealing with log files, because many of them
   insist on any log file to carry just ANSI characters.
 
-  Although we've changed it here for demonstration purposes we recommend sticking with ANSI unless you have a _very_ good reason 
+  Although we've changed it here for demonstration purposes we recommend sticking with ANSI unless you have a _very_ good reason
   not to. When we introduce proper error handling in chapter 6 there won't be a need for having APL characters in the log file anyway.
-  
-* Since we have not changed either `autoReOpen` (1) or `filenameType` ("DATE") it tells the `Logger` class that it should automatically 
+
+* Since we have not changed either `autoReOpen` (1) or `filenameType` ("DATE") it tells the `Logger` class that it should automatically
   close a log file and re-open a new one each day at 24:00. It also defines (together with `filenamePrefix`) the name of the log file.
 
 * If we would run `OpenLogFile` and allow it to return its result to the session window then something similar to this would appear:
@@ -162,13 +162,13 @@ Notes:
    ~~~
    [Logger:Logs\MyApp_20170211.log(¯87200436)]
    ~~~
-   
+
    * "Logger" just tells us the name of the class the object was instantiated from.
-   
-   * The path between `:` and `(` tell us the actual filename of the log file. Because the `filenameType` is "DATE" the name carries 
-     the year, month and day the log file was opened. 
-     
-   * The negative number is the tie number of the log file.  
+
+   * The path between `:` and `(` tell us the actual filename of the log file. Because the `filenameType` is "DATE" the name carries
+     the year, month and day the log file was opened.
+
+   * The negative number is the tie number of the log file.
 
 
 We create a function `Initial` (short for "Initialize") which calls `OpenLogFile` and returns the `Logger` instance:
@@ -220,9 +220,9 @@ We make one change in `ProcessFile`:
 
 We use `APLTreeUtils.ReadUtf8File` rather than `⎕NGET` for several reasons:
 
-  1. It simplifies matters because the function deals with end-of-line characters automatically, no matter what the current operating system is. 
+  1. It simplifies matters because the function deals with end-of-line characters automatically, no matter what the current operating system is.
   1. The function takes care of a BOM [^bom] by removing it.
-  
+
 `ReadUtf8File` returns a vtv by default: one item per record. We need a simple text vector. Although it is easy enough to flatten `ReadUtf8File`'s result (`⊃,/`) it is more efficient to tell `ReadUtf8File` not to split the stream into records in the first place.
 
 Now we have to make sure that `Initial` is called from `StartFromCmdLine`:
@@ -241,7 +241,7 @@ We also have to make sure that `GetFiles` is called from `TxtToCsv`. In addition
 ~~~
 ∇ rc←TxtToCsv fullfilepath;files;tbl;lines;target
 ⍝ Write a sibling CSV of the TXT located at fullfilepath,
-⍝ containing a frequency count of the letters in the file text      
+⍝ containing a frequency count of the letters in the file text
    MyLogger.Log'Started MyApp in ',F.PWD
    MyLogger.Log'Source: ',fullfilepath
    (target files)←GetFiles fullfilepath
@@ -251,7 +251,7 @@ We also have to make sure that `GetFiles` is called from `TxtToCsv`. In addition
    :Else
        tbl←⊃⍪/(CountLetters ProcessFiles)files
        lines←{⍺,',',⍕⍵}/⊃{⍺(+/⍵)}⌸/↓[1]tbl
-       A.WriteUtf8File target lines 
+       A.WriteUtf8File target lines
        MyLogger.Log(⍕⍴files),' file',((1<⍴files)/'s'),' processed:'
        MyLogger.Log' ',↑files
        rc←0
@@ -267,7 +267,7 @@ Notes:
 
   1. It simplifies matters because these functions deal with end-of-line characters automatically, no matter what the current operating system is.
   1. It will either overwrite an existing file or create a new one for us. It will also try several times in case something goes wrong. This is often helpful when a slippery network is involved.
-  
+
 * We could have written `A.WriteUtf8File target ({⍺,',',⍕⍵}/⊃{⍺(+/⍵)}⌸/↓[1]tbl)`, avoiding the local variable `lines`. We didn't because this variable might be very helpful in case something goes wrong and we need to trace through the `TxtToCsv` function.
 
 * Note that we do not pass `MyLogger` as an argument to `TxtToCsv`. We could, and some would say we should. We will discuss this issue in detail in the "Configuration settings" chapter.
@@ -281,9 +281,9 @@ Finally we change `Version`:
   ⍝ * 1.1.0:
   ⍝   * Can now deal with non-existent files.
   ⍝   * Logging implemented.
-    r←(⍕⎕THIS) '1.1.0' '2017-02-26'             
+    r←(⍕⎕THIS) '1.1.0' '2017-02-26'
 ∇
-~~~    
+~~~
 
 The foreseeable error that aborted the runtime task -- on an invalid filepath -- has now been replaced by a message saying no files were found. We have also changed the explicit result. So far it has returned the number of bytes written. In case something goes wrong ("file not found" etc.) it will return `¯1` now.
 
@@ -292,7 +292,7 @@ As the logging starts and ends in `TxtToCsv`, we can run this in the workspace n
 ~~~
       #.MyApp.TxtToCsv 'Z:\texts\en'
       ⊃(⎕NINFO⍠1) 'Logs\*.LOG'
- MyApp_20160406.log 
+ MyApp_20160406.log
       ↑⎕NGET 'Logs\MyApp_20160406.log'
 2016-04-06 13:42:43 *** Log File opened
 2016-04-06 13:42:43 (0) Started MyApp in Z:\
@@ -312,9 +312,9 @@ Let's see if logging works also for the exported EXE. Run the DYAPP to rebuild t
 Z:\code\v04\MyApp.exe Z:\texts\en
 ~~~
 
-Yes! The output TXT gets produced as before, and the work gets logged in `Z:\Logs`. 
+Yes! The output TXT gets produced as before, and the work gets logged in `Z:\Logs`.
 
-Let's see what happens now when the filepath is invalid. 
+Let's see what happens now when the filepath is invalid.
 
 ~~~
 Z:\code\v04\MyApp.exe Z:\texts\de
@@ -332,13 +332,13 @@ No warning message -- the program made an orderly finish. And the log?
 2017-02-26 10:54:26 (0) Source: "Z:\texts\en\ageofinnocence.txt"
 2017-02-26 10:54:26 (0) Started MyApp in Z:\code\v04
 2017-02-26 10:54:26 (0) 1 file processed.
-2017-02-26 10:58:07 (0) Z:/texts/en/ageofinnocence.txt 
+2017-02-26 10:58:07 (0) Z:/texts/en/ageofinnocence.txt
 2017-02-26 10:54:35 *** Log File opened
 2017-02-26 10:54:35 (0) Started MyApp in Z:\code\v04
 2017-02-26 10:54:35 (0) Source: "Z:\texts\en\"
 2017-02-26 10:54:35 (0) 9 files processed.
-2017-02-26 10:58:07 (0) Z:/texts/en/ageofinnocence.txt 
-... 
+2017-02-26 10:58:07 (0) Z:/texts/en/ageofinnocence.txt
+...
 ~~~
 
 I> In case you wonder what the `(0)` in the log file stands for: this reports the thread number that has written to the log file. Since we do not use threads this is always `(0)` = the main thread the interpreter is running in.
@@ -359,7 +359,7 @@ This is more readable and therefore better.
 
 We now have `MyApp` logging its work in a subfolder of the application folder and reporting problems which it has anticipated.
 
-Next we need to consider how to handle and report errors we have _not_ anticipated. We should also return some kind of error code to Windows. If `MyApp` encounters an error, any process calling it needs to know. 
+Next we need to consider how to handle and report errors we have _not_ anticipated. We should also return some kind of error code to Windows. If `MyApp` encounters an error, any process calling it needs to know.
 
 A> ### Destructors and the Tracer
 A>
@@ -423,37 +423,49 @@ Load ..\AplTree\Logger
 
 Now we change `Initial` so that it creates an instance of `WindowsEventLog` and returns it as part of the result. We also tell the Windows Event Log that the application has started:
 
+SANITY CHECK
+
 ~~~
-leanpub-start-insert  
+foo
+leanpub-start-insert
+bar
+leanpub-end-insert
+baz
+~~~
+
+SANITY CHECK
+
+~~~
+leanpub-start-insert
 ∇ {(MyLogger MyWinEventLog)}←Initial dummy
-leanpub-end-insert  
+leanpub-end-insert
 ⍝ Prepares the application.
 ⍝ Side effect: creates `MyLogger`, an instance of the `Logger` class.
   #.⎕IO←1 ⋄ #.⎕ML←1 ⋄ #.⎕WX←3 ⋄ #.⎕PP←15 ⋄ #.⎕DIV←1
-  MyLogger←OpenLogFile'Logs'      
+  MyLogger←OpenLogFile'Logs'
   MyLogger.Log'Started MyApp in ',F.PWD
-leanpub-start-insert  
+leanpub-start-insert
   MyWinEventLog←⎕NEW ##.WindowsEventLog(,⊂'Myapp')
   MyWinEventLog.WriteInfo'Application started'
-leanpub-end-insert  
+leanpub-end-insert
 ∇
 ~~~
 
 `Initial` is called by `StartFromCmdLine`, so that functions needs to be amended as well. We localize `MyWinEventLog`, the name of the instance, and change the call to `Initial` since it now returns two rather than one instance. Finally we write we tell the Windows Event Log that we are shutting down when `TxtToCsv` was called:
 
 ~~~
-leanpub-start-insert  
+leanpub-start-insert
 ∇ {r}←StartFromCmdLine arg;MyLogger;MyWinEventLog
-leanpub-end-insert  
+leanpub-end-insert
 ⍝ Needs command line parameters, runs the application.
   r←⍬
-leanpub-start-insert  
+leanpub-start-insert
   (MyLogger MyWinEventLog)←Initial ⍬
-leanpub-end-insert    
+leanpub-end-insert
   r←TxtToCsv arg
-leanpub-start-insert    
+leanpub-start-insert
   MyWinEventLog.WriteInfo'Application shuts down'
-leanpub-end-insert      
+leanpub-end-insert
 ∇
 ~~~
 
@@ -462,16 +474,16 @@ So far we have used the method `WriteInfo`. For demonsttration purposes we use t
 ~~~
 ∇ rc←TxtToCsv fullfilepath;files;tbl;lines;target
   ...
-leanpub-start-insert        
+leanpub-start-insert
   MyWinEventLog.WriteWarning'MyApp warning'
   MyWinEventLog.WriteError'MyApp Error'
-leanpub-end-insert        
+leanpub-end-insert
   (target files)←GetFiles fullfilepath
   ...
 ∇
 ~~~
 
-Having made all these changes we are ready to compile the WS from scratch: 
+Having made all these changes we are ready to compile the WS from scratch:
 
 1. Double-click the DYAPP in `v04a`.
 1. Change the WSID to "MyApp"
@@ -506,13 +518,13 @@ No doubt you feel now confident with the Windows Event Log, right? Well, keep re
 * Even when your user ID has admin rights and you've started Dyalog in elevated mode ("Run as administrator" in the context menu) you _cannot_ delete a custom log with calls to `WinReg` (The APLTree member that deal with the Windows Registry). The only way to delete custom logs is with the Registry Editor: go to the key
 
   `HKEY_LOCAL_MACHINE\SYSTEM\CurrentControlSet\Services\EventLog\`
-  
+
   and delete the key(s) (=children) you want to get rid of. It's not a bad idea to create a system restore point [^restore] before you do that. (If you never payed attention to System Restore Points you really need to follow the link!)
-  
-* Once you have written events to a source and then deleted the log the source pretends to belong to, the events remain saved anyway. They are just not vsisible anymore. That can be proven by re-creating the log: all the events make a come-back and show up again as they did before. 
+
+* Once you have written events to a source and then deleted the log the source pretends to belong to, the events remain saved anyway. They are just not vsisible anymore. That can be proven by re-creating the log: all the events make a come-back and show up again as they did before.
 
   If you really want to get rid of the logs then you have to select the "Clear log" command from the context menu in the Event Viewer (tree only|!) before you delete the log.
- 
+
 
 
 
