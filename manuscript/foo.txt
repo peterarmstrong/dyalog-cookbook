@@ -1,0 +1,31 @@
+{:: encoding="utf-8" /}
+
+SANITY CHECK
+
+~~~
+foo
+leanpub-start-insert
+bar
+leanpub-end-insert
+baz
+~~~
+
+SANITY CHECK
+
+~~~
+leanpub-start-insert
+∇ {(MyLogger MyWinEventLog)}←Initial dummy
+leanpub-end-insert
+⍝ Prepares the application.
+⍝ Side effect: creates `MyLogger`, an instance of the `Logger` class.
+  #.⎕IO←1 ⋄ #.⎕ML←1 ⋄ #.⎕WX←3 ⋄ #.⎕PP←15 ⋄ #.⎕DIV←1
+  MyLogger←OpenLogFile'Logs'
+  MyLogger.Log'Started MyApp in ',F.PWD
+leanpub-start-insert
+  MyWinEventLog←⎕NEW ##.WindowsEventLog(,⊂'Myapp')
+  MyWinEventLog.WriteInfo'Application started'
+leanpub-end-insert
+∇
+~~~
+
+END
