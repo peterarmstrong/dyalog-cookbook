@@ -2,6 +2,12 @@
 
 SANITY CHECK
 
+Here's an image:
+
+![a caption](images/13_MyHelp_2.png)
+
+SANITY CHECK
+
 ~~~
 foo
 leanpub-start-insert
